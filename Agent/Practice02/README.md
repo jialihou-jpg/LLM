@@ -9,9 +9,19 @@
 
 | 文件 | 说明 |
 | --- | --- |
+| `chat-stream-tool-getDate.py` | 循环流式对话 + `getDate` 工具，通过 subprocess 调用本地 `date` 命令获取日期时间 |
 | `chat-stream-tool-fileOps.py` | 主程序：OpenAI 兼容流式对话 + 10 个文件操作 function |
 | `chat-stream-tool-fileOps.mmd` | 本程序的代码架构图（Mermaid 源码，GitHub / VS Code 可直接渲染） |
 | `README.md` | 本文档 |
+
+## getDate 小工具演示
+
+```powershell
+python chat-stream-tool-getDate.py
+> 今天几号了？
+```
+
+LLM 会自动调用 `getDate` 工具（底层是 `subprocess` 调用系统 `date` 命令，Windows 走 `cmd /c date /t` + `time /t`，Linux/macOS 走 `date`），再把结果流式念给你听。
 
 ## 内置的 10 个本地文件工具
 
