@@ -1,0 +1,88 @@
+%%{init: {'theme':'neutral', 'flowchart':{'curve':'basis'}} }%%
+flowchart TD
+    %% ============ 入口与配置 ============
+    Start([启动 chat-stream-tool-fileOps.py]):::entry --> LoadCfg[读取 config.ini<br/>base_url / api_key / model]:::config
+    LoadCfg --> SysMsg[构造 system 消息<br/>声明本地文件操作助手角色]:::config
+    SysMsg --> Loop([主循环 main<br/>等待用户输入]):::entry
+
+    %% ============ 用户输入 ============
+    Loop --> Input[/用户输入自然语言问题/]:::io
+    Input --> AppendUser[messages 追加 user 消息]:::msg
+
+    %% ============ 第一轮：非流式请求，判断是否要调用工具 ============
+    AppendUser --> Req1[POST /chat/completions<br/>stream=false, tools=10个function声明<br/>tool_choice=auto]:::llm
+    Req1 --> LLM[(OpenAI 兼容 LLM<br/>SiliconFlow / 自建网关)]:::llm
+
+    LLM --> Decision{返回 message 是否带 tool_calls ?}:::decision
+
+    %% ============ 分支 A：直接回答，无工具调用 ============
+    Decision -- 否 --> Direct[直接打印 content]:::io
+    Direct --> AppendAsst1[messages 追加 assistant 消息]:::msg
+    AppendAsst1 --> Loop
+
+    %% ============ 分支 B：需要调用工具 ============
+    Decision -- 是 --> AppendAsst[把 assistant 消息<br/>含 tool_calls 追加进 messages]:::msg
+    AppendAsst --> Dispatch{遍历每个 tool_call<br/>按 name 从 tool_map 分发}:::dispatch
+
+    %% ============ 10 个本地文件操作工具 ============
+    subgraph TOOLS["本地文件操作工具集（Python 标准库实现）"]
+        direction LR
+        T1[getcwd<br/>获取当前工作目录]:::tool
+        T2[list_dir<br/>列出目录下文件和子目录]:::tool
+        T3[get_file_type<br/>文件类型/扩展名/MIME/大小]:::tool
+        T4[read_file<br/>读取纯文本文件内容]:::tool
+        T5[create_file<br/>按目录+文件名创建新文件]:::tool
+        T6[edit_file<br/>整体覆盖写入纯文本文件]:::tool
+        T7[make_dir<br/>创建新目录（含父目录）]:::tool
+        T8[remove_dir<br/>递归删除非空目录]:::danger
+        T9[remove_file<br/>删除文件]:::danger
+        T10[rename_path<br/>重命名/移动文件或目录]:::tool
+    end
+
+    Dispatch --> T1 & T2 & T3 & T4 & T5 & T6 & T7 & T8 & T9 & T10
+
+    %% ============ 文件系统与安全过滤 ============
+    T2 & T3 --> FS[(本地文件系统<br/>os / pathlib / shutil / mimetypes)]:::fs
+    T4 --> Sniff{_is_text_file<br/>后缀白名单 + NUL 字节嗅探}:::guard
+    T6 --> Sniff
+    Sniff -- 二进制 --> Reject[拒绝读取/编辑<br/>返回提示信息]:::guard
+    Sniff -- 纯文本 --> FS
+    T5 --> FS
+    T7 --> FS
+    T8 --> FS
+    T9 --> FS
+    T10 --> FS
+    T1 --> CWD[os.getcwd<br/>进程当前工作目录]:::fs
+
+    Reject --> Collect
+    T1 & T2 & T3 & T4 & T5 & T6 & T7 & T8 & T9 & T10 --> Collect[汇总工具返回字符串 result]:::msg
+
+    %% ============ 工具结果回灌 ============
+    Collect --> AppendTool[messages 追加 role=tool 消息<br/>携带 tool_call_id / name / content]:::msg
+    AppendTool --> Req2[POST /chat/completions<br/>stream=true<br/>不再带 tools 参数]:::llm
+    Req2 --> LLM
+
+    %% ============ 第二轮：SSE 流式输出 ============
+    LLM --> SSE[SSE 数据流<br/>逐行解析 data: {...}]:::stream
+    SSE --> Delta[提取 choices.0.delta.content<br/>逐字 print + sleep 20ms]:::stream
+    Delta --> DoneToken{遇到 [DONE] ?}:::decision
+    DoneToken -- 否 --> SSE
+    DoneToken -- 是 --> AppendAsst2[汇总完整 answer<br/>追加进 messages 保持多轮上下文]:::msg
+    AppendAsst2 --> Loop
+
+    %% ============ 退出 ============
+    Input -- exit / EOF / Ctrl+C --> Bye([再见，退出进程]):::entry
+
+    %% ============ 样式 ============
+    classDef entry fill:#1f6feb,color:#fff,stroke:#0b3d91,stroke-width:1px;
+    classDef config fill:#e6f3ff,stroke:#1f6feb,color:#0b3d91;
+    classDef msg fill:#f6f8fa,stroke:#8c959f,color:#1f2328;
+    classDef llm fill:#fff8c5,stroke:#bf8700,color:#5a4500;
+    classDef stream fill:#dafbe1,stroke:#1a7f37,color:#0f5132;
+    classDef decision fill:#ffd8e2,stroke:#cf222e,color:#6e1018;
+    classDef dispatch fill:#fff1e5,stroke:#bc4c00,color:#6b2a00;
+    classDef tool fill:#ddf4ff,stroke:#0969da,color:#0a3069;
+    classDef danger fill:#ffd8d3,stroke:#cf222e,color:#6e1010;
+    classDef guard fill:#fff8c5,stroke:#9a6700,color:#5a4500;
+    classDef fs fill:#eaeef2,stroke:#57606a,color:#1f2328;
+    classDef io fill:#fbefff,stroke:#8250df,color:#3b1f66;
