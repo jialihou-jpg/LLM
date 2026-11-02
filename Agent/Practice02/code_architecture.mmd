@@ -1,0 +1,128 @@
+```mermaid
+graph TB
+    %% 标题
+    TITLE["Chat Tool File Operations<br/>文件操作AI助手系统架构"]:::titleStyle
+
+    %% ============ 应用层 / 核心模块 ============
+    subgraph MAIN_APP["主应用程序"]
+        MAIN_LOOP[主循环]:::componentStyle
+        HISTORY_MGR[对话历史管理]:::componentStyle
+        USER_INPUT[用户输入处理]:::componentStyle
+    end
+
+    %% ============ 服务层 / LLM 与工具管理 ============
+    subgraph LLM_API["LLM API接口层"]
+        API_REQUEST[API请求处理]:::componentStyle
+        STREAM_PROCESS[流式响应处理]:::componentStyle
+        TOOL_HANDLER[工具调用处理]:::componentStyle
+    end
+
+    subgraph TOOL_MANAGER["工具管理器"]
+        TOOL_REGISTRY[工具注册表]:::componentStyle
+        TOOL_DISPATCH[工具分发器]:::componentStyle
+        PARSE_JSON[JSON参数解析]:::componentStyle
+    end
+
+    %% ============ 工具层 / 文件操作 ============
+    subgraph FILE_OPS["文件操作工具集"]
+        DIR_OPS["目录操作<br/>- getcwd<br/>- listDir"]:::fileToolStyle
+        FILE_INFO["文件信息<br/>- getFileType<br/>- readFile"]:::fileToolStyle
+        FILE_CRUD["文件CRUD<br/>- createFile<br/>- editFile"]:::fileToolStyle
+        FILE_UTILS["文件工具函数<br/>- _decode<br/>- _read_text"]:::fileToolStyle
+    end
+
+    subgraph CONFIG["配置管理"]
+        CONFIG_READER[配置文件读取]:::componentStyle
+        MODULE_CONFIG[模块配置]:::componentStyle
+    end
+
+    %% ============ 数据流模块 ============
+    subgraph DATA_FLOW["数据处理流程"]
+        INPUT_DATA[用户输入数据]:::dataStyle
+        PROMPT_DATA[系统提示数据]:::dataStyle
+        TOOL_CALL_DATA[工具调用数据]:::dataStyle
+        RESPONSE_DATA[LLM响应数据]:::dataStyle
+        FILE_DATA[文件数据]:::dataStyle
+    end
+
+    %% ============ 基础设施 / 外部依赖 ============
+    subgraph EXTERNAL["第三方库依赖"]
+        REQUESTS["requests<br/>HTTP请求"]:::libStyle
+        CONFIGPARSER["configparser<br/>配置解析"]:::libStyle
+        JSON["json<br/>JSON处理"]:::libStyle
+        MIMETYPES["mimetypes<br/>MIME类型"]:::libStyle
+        OS["os<br/>系统操作"]:::libStyle
+        WARNINGS["warnings<br/>警告处理"]:::libStyle
+    end
+
+    %% ============ 样式定义 ============
+    classDef titleStyle fill:#ffcc66,stroke:#ff9900,stroke-width:3px
+    classDef componentStyle fill:#fff2cc,stroke:#e69138,stroke-width:1.5px
+    classDef fileToolStyle fill:#d9ead3,stroke:#6aa84f,stroke-width:1.5px
+    classDef dataStyle fill:#ead1dc,stroke:#a64d79,stroke-width:1.5px,dashed
+    classDef libStyle fill:#cfe2f3,stroke:#0b5394,stroke-width:1.5px
+    classDef noteStyle fill:#fffacd,stroke:#999,stroke-width:1px,stroke-dasharray:3
+    classDef connectorStyle fill:transparent,stroke:#ff6600,stroke-width:2px,stroke-dasharray:5
+    classDef layerStyle fill:#f8f8f8,stroke:#666,stroke-width:1.5px
+
+    %% ============ 主要流程关系 ============
+    USER_INPUT --> INPUT_DATA
+    INPUT_DATA --> MAIN_LOOP
+    MAIN_LOOP --> HISTORY_MGR
+    HISTORY_MGR --> API_REQUEST
+
+    CONFIG_READER --> MODULE_CONFIG
+    MODULE_CONFIG --> API_REQUEST
+
+    API_REQUEST --> STREAM_PROCESS
+    STREAM_PROCESS --> TOOL_HANDLER
+    TOOL_HANDLER --> RESPONSE_DATA
+    RESPONSE_DATA --> TOOL_REGISTRY
+
+    TOOL_REGISTRY --> TOOL_DISPATCH
+    TOOL_DISPATCH --> PARSE_JSON
+    PARSE_JSON --> DIR_OPS
+    PARSE_JSON --> FILE_INFO
+    PARSE_JSON --> FILE_CRUD
+
+    TOOL_DISPATCH --> RESPONSE_DATA
+    RESPONSE_DATA --> HISTORY_MGR
+
+    %% ============ 文件操作细节 ============
+    FILE_UTILS --> FILE_INFO
+    FILE_UTILS --> FILE_CRUD
+    FILE_UTILS --> DIR_OPS
+
+    %% ============ 工具函数调用链 ============
+    DIR_OPS --> OS
+    FILE_INFO --> MIMETYPES
+    FILE_INFO --> OS
+    FILE_CRUD --> OS
+    PARSE_JSON --> JSON
+
+    %% ============ 配置和输入输出 ============
+    CONFIG_READER --> CONFIGPARSER
+    API_REQUEST --> REQUESTS
+    STREAM_PROCESS --> REQUESTS
+    MAIN_LOOP --> WARNINGS
+
+    %% ============ 注释说明 ============
+    NOTE1["主要功能：<br/>1. 与LLM API交互<br/>2. 文件系统操作<br/>3. 工具调用管理"]:::noteStyle
+    NOTE2["设计特点：<br/>- 模块化设计<br/>- 可扩展工具集<br/>- 流式响应处理<br/>- 配置驱动"]:::noteStyle
+
+    %% ============ 关键连接点 ============
+    CORE_CALL["核心调用链"]:::connectorStyle
+    API_REQUEST -.-> CORE_CALL
+    CORE_CALL -.-> TOOL_REGISTRY
+    FILE_DATA -.-> FILE_OPS
+
+    %% ============ 架构层次标注 ============
+    L1[应用层<br/>Main Application]:::layerStyle
+    L2[服务层<br/>LLM & Manager]:::layerStyle
+    L3[工具层<br/>File Operations]:::layerStyle
+    L4[基础设施<br/>External Libs]:::layerStyle
+
+    L1 --> L2
+    L2 --> L3
+    L3 --> L4
+```

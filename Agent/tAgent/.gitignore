@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+venv/
+
+# 本地配置（含密钥）
+config.ini
+# 本地 MCP 端点配置（含个人 URL / token，不提交）
+.mcp.json
+
+# 编辑器
+.vscode/
+.idea/

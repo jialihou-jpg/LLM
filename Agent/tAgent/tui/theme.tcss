@@ -1,0 +1,60 @@
+/* tAgent Textual 主题 */
+
+Screen {
+    background: $surface;
+    layers: base;
+}
+
+Header {
+    background: $panel;
+}
+
+#chat {
+    padding: 1 2;
+    scrollbar-size-vertical: 1;
+}
+
+.message {
+    margin: 1 0;
+    padding: 0 1;
+    width: 100%;
+    border: round $primary-darken-2;
+}
+
+.user-message {
+    border: round $primary;
+    background: $boost;
+}
+
+.assistant-message {
+    border: round $success;
+}
+
+.tool-message {
+    border: round $warning;
+}
+
+.error-message {
+    border: round $error;
+    color: $error;
+}
+
+.info-message {
+    color: $text-muted;
+    margin: 0 0 1 0;
+}
+
+#prompt {
+    height: 5;
+    border: tall $accent;
+}
+
+#status {
+    height: 1;
+    background: $panel;
+    color: $text-muted;
+}
+
+Footer {
+    background: $panel;
+}

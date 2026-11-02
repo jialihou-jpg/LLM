@@ -1,0 +1,155 @@
+```mermaid
+flowchart TD
+    %% 主标题
+    TITLE[["Chat Tool Fileops 详细架构图<br/>基于 chat-tool-fileops.py"]]:::titleStyle
+    
+    %% 初始化流程
+    subgraph INIT["🌱 初始化阶段"]
+        I1["导入依赖库"]:::initStep
+        I2["读取配置文件"]:::initStep
+        I3["定义工具集TOOLS"]:::initStep
+        I4["设置请求参数"]:::initStep
+    end
+    
+    I1 --> I2 --> I3 --> I4
+    
+    %% 核心组件
+    CONFIG_READER[["config.ini读取器<br/>base_url, api_key, model"]]:::configStyle
+    TOOL_DEFS[["工具定义TOOLS<br/>6个文件操作工具"]]:::dataStyle
+    MAIN_FUNC[["主函数main()<br/>交互循环核心"]]:::funcStyle
+    
+    I2 --> CONFIG_READER
+    I3 --> TOOL_DEFS
+    I4 --> MAIN_FUNC
+    
+    %% 工具注册详情
+    subgraph TOOLS_DETAIL["🛠️ 注册的工具函数"]
+        T1["getcwd<br/>获取当前目录"]:::tool
+        T2["listDir<br/>列出目录内容"]:::tool
+        T3["getFileType<br/>获取文件信息"]:::tool
+        T4["readFile<br/>读取文件内容"]:::tool
+        T5["createFile<br/>创建文件"]:::tool
+        T6["editFile<br/>编辑文件"]:::tool
+    end
+    
+    TOOL_DEFS --> TOOLS_DETAIL
+    
+    %% 关键函数
+    subgraph FUNCTIONS["🔧 核心函数"]
+        F1["stream_chat()<br/>与LLM通信"]:::funcStyle
+        F2["call_tool()<br/>调用工具"]:::funcStyle
+        F3["工具执行函数<br/>6个对应工具"]:::funcStyle
+        F4["工具辅助函数<br/>_decode(), _read_text()"]:::funcStyle
+    end
+    
+    MAIN_FUNC --> FUNCTIONS
+    
+    %% 详细执行流程
+    subgraph STEP1["1️⃣ 用户输入处理"]
+        S1_1["用户提示输入"]:::user
+        S1_2["添加到对话历史"]:::process
+        S1_3["构建messages"]:::process
+    end
+    
+    subgraph STEP2["2️⃣ LLM交互处理"]
+        S2_1["发送API请求"]:::api
+        S2_2["流式响应处理"]:::process
+        S2_3["检测工具调用"]:::process
+    end
+    
+    subgraph STEP3["3️⃣ 工具调用处理"]
+        S3_1["解析工具名称"]:::process
+        S3_2["解析JSON参数"]:::process
+        S3_3["调用对应函数"]:::funcStyle
+        S3_4["返回执行结果"]:::data
+    end
+    
+    subgraph STEP4["4️⃣ 完成交互"]
+        S4_1["更新对话历史"]:::data
+        S4_2["等待下一轮"]:::user
+    end
+    
+    %% 流程连接
+    F1 --> STEP1
+    STEP1 --> STEP2
+    STEP2 --> STEP3
+    STEP3 --> STEP4
+    STEP4 --> STEP1
+    
+    %% 工具调用链细化
+    subgraph TOOL_CALL_CHAIN["🔗 工具调用链"]
+        TCC1["stream_chat检测到tool_calls"]:::process
+        TCC2["提取工具名称和参数"]:::process
+        TCC3["call_tool函数路由"]:::funcStyle
+        TCC4["执行具体工具函数"]:::funcStyle
+        TCC5["返回结果格式化"]:::process
+    end
+    
+    F2 --> TOOL_CALL_CHAIN
+    TOOL_CALL_CHAIN --> S3_4
+    
+    %% 文件操作具体实现
+    subgraph FILE_OPS_IMPL["💾 文件操作实现"]
+        FO1["目录操作函数"]:::fileOp
+        FO2["文件读取函数"]:::fileOp
+        FO3["内容解码处理"]:::fileOp
+        FO4["MIME类型检测"]:::fileOp
+        FO5["文件创建/编辑"]:::fileOp
+    end
+    
+    F3 --> FILE_OPS_IMPL
+    F4 --> FILE_OPS_IMPL
+    
+    %% 错误处理流程
+    subgraph ERROR_HANDLING["⚠️ 错误处理"]
+        EH1["文件不存在检查"]:::error
+        EH2["参数验证"]:::error
+        EH3["JSON解析错误"]:::error
+        EH4["文件类型检查"]:::error
+        EH5["API请求错误"]:::error
+    end
+    
+    FUNCTIONS --> ERROR_HANDLING
+    FILE_OPS_IMPL --> ERROR_HANDLING
+    
+    %% 数据存储
+    subgraph DATA_STORES["💾 数据存储"]
+        DS1["对话历史messages"]:::store
+        DS2["配置文件数据"]:::store
+        DS3["工具参数缓存"]:::store
+        DS4["文件系统状态"]:::store
+    end
+    
+    MAIN_FUNC --> DS1
+    CONFIG_READER --> DS2
+    TOOL_CALL_CHAIN --> DS3
+    FILE_OPS_IMPL --> DS4
+    
+    %% 样式定义
+    classDef titleStyle fill:#ff9900,stroke:#e68a00,color:white,stroke-width:3px
+    classDef initStep fill:#ccffcc,stroke:#66cc66,stroke-width:1px
+    classDef configStyle fill:#ffcc99,stroke:#ff9933,stroke-width:1.5px
+    classDef dataStyle fill:#d4fcce,stroke:#6bde55,stroke-width:1.5px
+    classDef funcStyle fill:#c9daf8,stroke:#3d85c6,stroke-width:1.5px
+    classDef tool fill:#f4cccc,stroke:#c90000,stroke-width:1.5px
+    classDef user fill:#c6f4ff,stroke:#33ccff,stroke-width:2px
+    classDef process fill:#fff2cc,stroke:#e69138,stroke-width:1.5px
+    classDef api fill:#e6ccff,stroke:#b366ff,stroke-width:1.5px
+    classDef fileOp fill:#d9d9ff,stroke:#6666ff,stroke-width:1.5px
+    classDef error fill:#ffcccc,stroke:#ff3333,stroke-width:1.5px
+    classDef store fill:#f2f2f2,stroke:#999,stroke-width:1px,dashed
+    
+    %% 统计信息
+    STATS["📊 系统统计：<br/>- 代码行数：~200行<br/>- 工具数量：6个<br/>- 核心函数：10+个<br/>- 依赖库：6个"]:::statsStyle
+    
+    classDef statsStyle fill:#e8f4f8,stroke:#5c9ead,stroke-width:1.5px
+    
+    %% 架构特点总结
+    FEATURES["🏆 架构特点：<br/>1. 模块化设计<br/>2. 工具可扩展<br/>3. 流式响应<br/>4. 错误鲁棒<br/>5. 配置驱动"]:::featureStyle
+    
+    classDef featureStyle fill:#fffacd,stroke:#ffd700,stroke-width:1.5px
+    
+    %% 连接统计和特点
+    TITLE --> STATS
+    TITLE --> FEATURES
+```
